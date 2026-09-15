@@ -1,0 +1,11 @@
+{
+  "name": "snooker-physics-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node serve.mjs",
+    "dev": "node serve.mjs",
+    "test": "node tests/physics-smoke.mjs"
+  }
+}
