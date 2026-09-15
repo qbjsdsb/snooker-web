@@ -29,8 +29,8 @@
 
     <main class="workspace">
       <section class="stage-panel">
-        <div id="stage" class="stage" aria-label="斯诺克物理测试球台"></div>
-        <div id="hint" class="stage-hint">移动鼠标瞄准 · 按住球台向后拖动蓄力 · 松开击球</div>
+        <div id="stage" class="stage" tabindex="0" aria-label="斯诺克物理测试球台"></div>
+        <div id="hint" class="stage-hint">A 瞄准 · 鼠标左右微调 · Shift 精瞄 · 拖动蓄力 · Space 临时俯视</div>
       </section>
 
       <aside class="control-panel">
@@ -64,12 +64,26 @@
           </div>
         </section>
 
-        <section class="control-section">
-          <div class="section-heading"><span>镜头</span></div>
+        <section class="control-section camera-section">
+          <div class="section-heading"><span>镜头与瞄准</span></div>
           <div class="segmented" id="cameraButtons">
             <button type="button" data-camera="aim" class="active">瞄准</button>
             <button type="button" data-camera="tactical">战术</button>
             <button type="button" data-camera="top">俯视</button>
+          </div>
+          <div class="camera-settings">
+            <div class="range-setting">
+              <div class="setting-line">
+                <label for="aimSensitivity">瞄准灵敏度</label>
+                <span id="aimSensitivityText">1.00×</span>
+              </div>
+              <input id="aimSensitivity" type="range" min="0.35" max="1.8" step="0.05" value="1" />
+            </div>
+            <label class="toggle-row" for="stableCamera">
+              <input id="stableCamera" type="checkbox" checked />
+              <span>稳定镜头（减少自动过渡）</span>
+            </label>
+            <p class="control-help">A 瞄准 · T / Esc 战术 · O 俯视 · Space 长按临时俯视 · Shift 精瞄</p>
           </div>
         </section>
 
