@@ -1,0 +1,9 @@
+SPDX-License-Identifier: GPL-3.0-only
+
+The Snooker Lite game under this directory is licensed under the GNU General Public License v3.0 only.
+
+The complete license text is included in this repository at:
+
+  ../vendor/tailuge-billiards/LICENSE
+
+Upstream attribution and adaptation notes are in NOTICE.md.
