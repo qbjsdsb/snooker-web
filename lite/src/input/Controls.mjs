@@ -105,9 +105,11 @@ export class Controls {
       } else if (event.key === ' ') {
         event.preventDefault()
         if (this.game.shoot()) this.onStatus?.('击球中…')
+        this.syncUI()
       } else if (event.key.toLowerCase() === 'r') {
         this.game.reset()
         this.onStatus?.('已重新摆球')
+        this.syncUI()
       } else if (event.key.toLowerCase() === 'g') {
         this.game.guideEnabled = !this.game.guideEnabled
         this.syncUI()
