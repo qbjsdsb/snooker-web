@@ -56,6 +56,14 @@ jobs:
           test -f vendor/tailuge-billiards/dist/three_examples.js
           test -f vendor/tailuge-billiards/dist/messaging.js
 
+      - name: Stage Snooker Lite side-by-side preview
+        run: |
+          rm -rf vendor/tailuge-billiards/dist/lite
+          cp -R lite vendor/tailuge-billiards/dist/lite
+          test -f vendor/tailuge-billiards/dist/lite/index.html
+          test -f vendor/tailuge-billiards/dist/lite/src/main.mjs
+          test -f vendor/tailuge-billiards/dist/lite/NOTICE.md
+
       - name: Upload built site artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4
