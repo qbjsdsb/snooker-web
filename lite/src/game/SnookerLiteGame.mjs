@@ -71,7 +71,12 @@ export class SnookerLiteGame {
   }
 
   canAim() {
-    return !this.shotActive && this.world.allStationary() && this.cueBall.onTable()
+    return (
+      !this.shotActive &&
+      this.world.allStationary() &&
+      this.cueBall.onTable() &&
+      this.redBall.onTable()
+    )
   }
 
   canShoot() {
