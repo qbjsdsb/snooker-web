@@ -17,6 +17,9 @@ const topSpinText = document.querySelector('#topSpinText');
 const sideSpinText = document.querySelector('#sideSpinText');
 const resetSpin = document.querySelector('#resetSpin');
 const cameraButtons = document.querySelector('#cameraButtons');
+const aimSensitivity = document.querySelector('#aimSensitivity');
+const aimSensitivityText = document.querySelector('#aimSensitivityText');
+const stableCamera = document.querySelector('#stableCamera');
 const speedMetric = document.querySelector('#speedMetric');
 const motionMetric = document.querySelector('#motionMetric');
 const hint = document.querySelector('#hint');
@@ -42,6 +45,12 @@ const ui = {
     }
     hint.textContent = scene.description;
   },
+  onCamera(mode) {
+    stage.dataset.camera = mode;
+    for (const button of cameraButtons.querySelectorAll('button[data-camera]')) {
+      button.classList.toggle('active', button.dataset.camera === mode);
+    }
+  },
   onMetrics({ speed, motion, moving }) {
     speedMetric.textContent = `${speed.toFixed(2)} m/s`;
     motionMetric.textContent = motion;
@@ -49,11 +58,16 @@ const ui = {
     physicsStatus.style.color = moving ? '#f0ddb7' : '';
     shootButton.disabled = moving;
   },
-  onFps(fps) { fpsLabel.textContent = `${fps} fps`; }
+  onFps(fps) {
+    fpsLabel.textContent = `${fps} fps`;
+    fpsLabel.classList.toggle('fps-low', fps < 45);
+  },
 };
 
 game = new SnookerGame({ renderer, ui });
-new InputController({ renderer, game, stage });
+const input = new InputController({ renderer, game, stage });
+input.setSensitivity(aimSensitivity.value);
+game.setStableCamera(stableCamera.checked);
 
 for (const scene of LAB_SCENES) {
   const button = document.createElement('button');
@@ -64,20 +78,34 @@ for (const scene of LAB_SCENES) {
   sceneButtons.appendChild(button);
 }
 ui.onSceneLoaded(LAB_SCENES[0]);
+ui.onCamera('aim');
 
 powerRange.addEventListener('input', () => game.setPower(powerRange.value));
 shootButton.addEventListener('click', () => game.shoot());
 resetScene.addEventListener('click', () => game.resetScene());
 resetSpin.addEventListener('click', () => game.setSpin(0, 0));
 
+aimSensitivity.addEventListener('input', () => {
+  const value = input.setSensitivity(aimSensitivity.value);
+  aimSensitivityText.textContent = `${value.toFixed(2)}×`;
+});
+
+stableCamera.addEventListener('change', () => {
+  game.setStableCamera(stableCamera.checked);
+});
+
 function updateSpinFromPointer(e) {
   const rect = spinPad.getBoundingClientRect();
-  let x = (e.clientX - (rect.left + rect.width/2)) / (rect.width * 0.36);
-  let y = (e.clientY - (rect.top + rect.height/2)) / (rect.height * 0.36);
+  let x = (e.clientX - (rect.left + rect.width / 2)) / (rect.width * 0.36);
+  let y = (e.clientY - (rect.top + rect.height / 2)) / (rect.height * 0.36);
   const m = Math.hypot(x, y);
-  if (m > 1) { x /= m; y /= m; }
+  if (m > 1) {
+    x /= m;
+    y /= m;
+  }
   game.setSpin(-y, x);
 }
+
 spinPad.addEventListener('pointerdown', (e) => {
   spinPad.setPointerCapture?.(e.pointerId);
   updateSpinFromPointer(e);
@@ -89,7 +117,6 @@ spinPad.addEventListener('pointermove', (e) => {
 cameraButtons.addEventListener('click', (e) => {
   const button = e.target.closest('button[data-camera]');
   if (!button) return;
-  for (const b of cameraButtons.querySelectorAll('button')) b.classList.toggle('active', b === button);
   game.setCamera(button.dataset.camera);
 });
 

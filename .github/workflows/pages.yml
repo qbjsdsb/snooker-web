@@ -3,6 +3,8 @@ name: Test and deploy GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,15 +13,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test-and-deploy:
+  test:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -29,8 +28,19 @@ jobs:
         with:
           node-version: 24
 
-      - name: Run physics smoke tests
+      - name: Run smoke tests
         run: npm test
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
