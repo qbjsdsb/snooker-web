@@ -1,4 +1,4 @@
-name: Test and deploy GitHub Pages
+name: Deploy tailuge billiards to GitHub Pages
 
 on:
   push:
@@ -17,23 +17,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Run smoke tests
-        run: npm test
+      - name: Verify vendored upstream and GPL license
+        run: |
+          test -f vendor/tailuge-billiards/LICENSE
+          test -f vendor/tailuge-billiards/README.md
+          test -f vendor/tailuge-billiards/dist/index.html
+          test -f vendor/tailuge-billiards/dist/index.js
+          grep -q "GNU GENERAL PUBLIC LICENSE" vendor/tailuge-billiards/LICENSE
+          echo "Vendored tailuge/billiards dist is ready for deployment."
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: test
+    needs: verify
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -45,10 +46,10 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload static site
+      - name: Upload upstream static site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: vendor/tailuge-billiards/dist
 
       - name: Deploy to GitHub Pages
         id: deployment
