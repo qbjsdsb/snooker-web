@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b100f" />
+    <title>Snooker Lite</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="topbar">
+        <div class="brand" aria-label="Snooker Lite">
+          <span class="brand-mark">S</span>
+          <div>
+            <strong>Snooker Lite</strong>
+            <span>单杆原型 · 固定视角</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="guide" class="quiet-button active" type="button" aria-pressed="true">辅助线</button>
+          <button id="reset" class="quiet-button" type="button">重新摆球</button>
+        </div>
+      </header>
+
+      <main id="viewport" class="viewport">
+        <div class="soft-vignette" aria-hidden="true"></div>
+        <div id="status" class="status" role="status">移动鼠标瞄准 · 调整力度 · 击球</div>
+        <div id="debug" class="debug" hidden></div>
+
+        <section class="shot-dock" aria-label="击球控制">
+          <div class="spin-control">
+            <div class="control-title">
+              <span>杆法</span>
+              <small>双击归中</small>
+            </div>
+            <div id="spinPad" class="spin-pad" aria-label="白球击点控制">
+              <span class="spin-cross spin-cross-x" aria-hidden="true"></span>
+              <span class="spin-cross spin-cross-y" aria-hidden="true"></span>
+              <span id="spinDot" class="spin-dot" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="power-control">
+            <div class="power-meta">
+              <label for="power">力度</label>
+              <output id="powerValue" for="power">38%</output>
+            </div>
+            <input id="power" type="range" min="2" max="100" step="1" value="38" />
+            <p>滚轮也可调整 · ← → 微调方向 · Shift 更精细</p>
+          </div>
+
+          <button id="shoot" class="shoot-button" type="button">
+            <span>击球</span>
+            <small>Space</small>
+          </button>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./src/main.mjs"></script>
+  </body>
+</html>
