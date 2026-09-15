@@ -1,0 +1,170 @@
+import { Container } from "../container/container"
+import { ContainerConfig } from "../container/containerconfig"
+import { Keyboard } from "../events/keyboard"
+import { BreakEvent } from "../events/breakevent"
+import { CameraTop } from "../view/cameratop"
+import {
+  bounceHan,
+  bounceHanBlend,
+  mathavanAdapter,
+} from "../model/physics/physics"
+import { strongeAdapter } from "../model/physics/stronge"
+import { Assets } from "../view/assets"
+import { RealOverlay } from "./real/realoverlay"
+import { id, getButton, getCanvas } from "../utils/dom"
+import { Session } from "../network/client/session"
+
+/**
+ * Integrate billiards container into diagram html page
+ */
+export class DiagramContainer {
+  container: Container
+  canvas3d
+  ruletype
+  replay: string
+  cushionModel
+  practiceMode = false
+  breakState = {
+    diagram: undefined as boolean | undefined,
+    init: null,
+    shots: [] as string[],
+  }
+
+  realOverlay
+
+  constructor(canvas3d, ruletype, replay) {
+    this.replay = replay
+    this.ruletype = ruletype
+    this.canvas3d = canvas3d
+    CameraTop.zoomFactor = 0.88
+  }
+
+  start() {
+    const urlParams = new URLSearchParams(window.location.search)
+    const lod = this.replay
+      ? 4
+      : Number.parseInt(urlParams.get("lod") ?? "1", 10)
+    Session.init(
+      "diagram",
+      "diagram",
+      "diagram",
+      false,
+      false,
+      false,
+      this.practiceMode,
+      lod
+    )
+    const keyboard = new Keyboard(this.canvas3d)
+    const config: ContainerConfig = {
+      element: this.canvas3d,
+      log: console.log,
+      assets: Assets.localAssets(this.ruletype),
+      ruletype: this.ruletype,
+      keyboard: keyboard,
+      id: "diagram",
+    }
+    this.container = new Container(config)
+    this.container.init()
+    if (this.cushionModel) {
+      this.container.table.cushionModel = this.cushionModel
+    }
+    this.onAssetsReady()
+  }
+
+  onAssetsReady = () => {
+    console.log(`diagram ready`)
+    const replaybutton = getButton("replay")!
+    this.replayButton(replaybutton)
+    const clearbutton = getButton("cleartraces")
+    if (clearbutton) {
+      this.clearTracesButton(clearbutton)
+    }
+    const overlayCanvas = getCanvas("overlaycanvas")
+    if (overlayCanvas) {
+      this.realOverlay = new RealOverlay(overlayCanvas, this.container)
+    } else {
+      this.breakState = JSON.parse(decodeURIComponent(this.replay))
+      this.container.eventQueue.push(
+        new BreakEvent(
+          this.breakState.init,
+          this.breakState.shots,
+          this.breakState.diagram
+        )
+      )
+    }
+    this.container.animate(performance.now())
+  }
+
+  clearTracesButton(button) {
+    button.addEventListener("click", () => {
+      this.container.table.balls.forEach((b) =>
+        b.ballmesh.clearGhosts(this.container.view.scene)
+      )
+    })
+  }
+
+  replayButton(replaybutton) {
+    replaybutton.innerHTML = "▷"
+    replaybutton.addEventListener("click", () => {
+      console.log("clicked with length=", this.container.eventQueue.length)
+      if (this.container.eventQueue.length == 0) {
+        const stateUrl = this.canvas3d?.dataset?.state
+        if (stateUrl) {
+          const params = new URLSearchParams(stateUrl)
+          const replay = params.get("state")
+          if (replay) {
+            this.replay = replay
+            this.breakState = JSON.parse(decodeURIComponent(replay))
+          }
+        }
+        this.container.table.updateFromShortSerialised(this.breakState.init)
+        this.container.table.freezeTraces(this.container.view.scene)
+        this.container.table.proximityIndicator.hide()
+        this.container.view.camera.forceMode(this.container.view.camera.topView)
+        this.container.eventQueue.push(
+          new BreakEvent(
+            this.breakState.init,
+            this.breakState.shots,
+            this.breakState.diagram
+          )
+        )
+      }
+      this.realOverlay?.start()
+    })
+  }
+
+  static fromDiamgramElement(diagram): DiagramContainer {
+    const containerDiv = diagram?.getElementsByClassName("topview")[0]
+    const stateUrl = containerDiv?.dataset.state
+    const params = new URLSearchParams(stateUrl)
+    const p = diagram?.getElementsByClassName("description")[0]
+    const common = id("common")
+    const editlink = document.createElement("a")
+    editlink.href = `../${stateUrl}`
+    editlink.innerHTML = "⬀"
+    editlink.target = "_blank"
+    p?.appendChild(editlink)
+    common?.appendChild(editlink)
+    const replaybutton = document.createElement("button")
+    p?.appendChild(replaybutton)
+    const diagramcontainer = new DiagramContainer(
+      containerDiv,
+      params.get("ruletype"),
+      params.get("state")
+    )
+    diagramcontainer.practiceMode = params.has("practice")
+    diagramcontainer.replayButton(replaybutton)
+    const model = params.get("cushionModel")
+    if (model == "bounceHan") {
+      diagramcontainer.cushionModel = bounceHan
+    } else if (model == "bounceHanBlend") {
+      diagramcontainer.cushionModel = bounceHanBlend
+    } else if (model == "stronge") {
+      diagramcontainer.cushionModel = strongeAdapter
+    } else {
+      diagramcontainer.cushionModel = mathavanAdapter
+    }
+
+    return diagramcontainer
+  }
+}
