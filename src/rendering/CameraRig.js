@@ -15,7 +15,6 @@ export class CameraRig {
     this.cue = { x: 0, z: 0 };
     this.aimAngle = 0;
     this.shotPose = null;
-    this._look = new THREE.Vector3();
     this._targetPosition = new THREE.Vector3();
     this._targetLook = new THREE.Vector3();
     this._currentLook = new THREE.Vector3();
@@ -42,9 +41,10 @@ export class CameraRig {
 
   setMode(mode) {
     if (!['aim', 'tactical', 'top', 'shot'].includes(mode)) return;
+    const previous = this.mode;
     if (mode !== 'top' && mode !== 'shot') this.returnMode = mode;
     this.mode = mode;
-    this._initialized = false;
+    if (this.stable || previous === 'top' || mode === 'top') this._initialized = false;
   }
 
   setMomentaryTop(active) {
@@ -66,14 +66,14 @@ export class CameraRig {
       look: new THREE.Vector3(cue.position.x + dx * 1.2, 0.03, cue.position.z + dz * 1.2),
     };
     this.mode = 'shot';
-    this._initialized = false;
+    if (this.stable) this._initialized = false;
   }
 
   endShot() {
     this.shotPose = null;
     this.mode = 'tactical';
     this.returnMode = 'tactical';
-    this._initialized = false;
+    if (this.stable) this._initialized = false;
   }
 
   resize(width, height) {
@@ -128,20 +128,24 @@ export class CameraRig {
     this._initialized = true;
   }
 
+  #setPerspectiveFov(fov) {
+    if (Math.abs(this.perspective.fov - fov) < 0.001) return;
+    this.perspective.fov = fov;
+    this.perspective.updateProjectionMatrix();
+  }
+
   #computePerspectivePose() {
     if (this.mode === 'shot' && this.shotPose) {
       this._targetPosition.copy(this.shotPose.position);
       this._targetLook.copy(this.shotPose.look);
-      this.perspective.fov = 38;
-      this.perspective.updateProjectionMatrix();
+      this.#setPerspectiveFov(38);
       return;
     }
 
     if (this.mode === 'tactical') {
       this._targetPosition.set(-0.08, 3.2, 3.35);
       this._targetLook.set(0.08, 0.02, 0);
-      this.perspective.fov = 40;
-      this.perspective.updateProjectionMatrix();
+      this.#setPerspectiveFov(40);
       return;
     }
 
@@ -157,7 +161,6 @@ export class CameraRig {
       0.035,
       this.cue.z + dz * AIM_LOOK_AHEAD,
     );
-    this.perspective.fov = 34;
-    this.perspective.updateProjectionMatrix();
+    this.#setPerspectiveFov(34);
   }
 }
