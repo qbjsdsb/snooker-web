@@ -1,0 +1,31 @@
+name: Snooker Lite CI
+
+on:
+  push:
+    branches:
+      - refactor/snooker-lite-core
+    paths:
+      - 'lite/**'
+      - '.github/workflows/snooker-lite-ci.yml'
+  pull_request:
+    paths:
+      - 'lite/**'
+      - '.github/workflows/snooker-lite-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Syntax check pure modules
+        shell: bash
+        run: |
+          find lite/src lite/tests -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: Physics acceptance tests
+        run: node --test lite/tests/physics.test.mjs
