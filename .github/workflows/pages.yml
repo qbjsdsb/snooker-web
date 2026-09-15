@@ -1,4 +1,4 @@
-name: Deploy tailuge billiards to GitHub Pages
+name: Build and deploy tailuge billiards
 
 on:
   push:
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,30 +27,49 @@ jobs:
         run: |
           test -f vendor/tailuge-billiards/LICENSE
           test -f vendor/tailuge-billiards/README.md
+          test -f vendor/tailuge-billiards/package.json
+          test -f vendor/tailuge-billiards/yarn.lock
           test -f vendor/tailuge-billiards/dist/index.html
-          test -f vendor/tailuge-billiards/dist/index.js
           grep -q "GNU GENERAL PUBLIC LICENSE" vendor/tailuge-billiards/LICENSE
-          echo "Vendored tailuge/billiards dist is ready for deployment."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install upstream dependencies
+        working-directory: vendor/tailuge-billiards
+        run: yarn install --immutable
+
+      - name: Build upstream project
+        working-directory: vendor/tailuge-billiards
+        run: yarn build
+
+      - name: Verify generated browser bundle
+        run: |
+          test -f vendor/tailuge-billiards/dist/index.js
+          test -f vendor/tailuge-billiards/dist/three_core.js
+          test -f vendor/tailuge-billiards/dist/three_module.js
+          test -f vendor/tailuge-billiards/dist/three_examples.js
+          test -f vendor/tailuge-billiards/dist/messaging.js
+
+      - name: Upload built site artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: vendor/tailuge-billiards/dist
 
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: verify
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload upstream static site
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: vendor/tailuge-billiards/dist
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
