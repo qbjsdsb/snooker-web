@@ -1,6 +1,7 @@
 import { PhysicsWorld } from '../physics/PhysicsWorld.js';
 import { cloneScene, LAB_SCENES } from '../lab/scenes.js';
 import { SnookerRules } from '../rules/SnookerRules.js';
+import { normalizeAngle } from '../input/aimMath.js';
 
 const FIXED_DT = 1 / 240;
 
@@ -18,9 +19,10 @@ export class SnookerGame {
     this.pull = 0;
     this.accumulator = 0;
     this.lastTime = performance.now();
-    this.running = true;
     this.frames = 0;
     this.fpsClock = 0;
+    this.cameraMode = 'aim';
+    this.wasMoving = false;
     this.loadScene(this.sceneId);
   }
 
@@ -38,18 +40,26 @@ export class SnookerGame {
       const target = this.world.balls.find((x) => x.id === scene.aimAt);
       if (target) point = target.position;
     }
-    if (cue && point) this.aimAngle = Math.atan2(point.z - cue.position.z, point.x - cue.position.x);
+    if (cue && point) {
+      this.aimAngle = Math.atan2(point.z - cue.position.z, point.x - cue.position.x);
+    }
+
     this.pull = 0;
+    this.wasMoving = false;
+    this.cameraMode = 'aim';
+    this.renderer.setCameraMode('aim');
     this.renderer.syncBalls(this.world.balls);
+    this.ui.onCamera?.('aim');
     this.ui.onSceneLoaded(scene);
   }
 
-  resetScene() { this.loadScene(this.sceneId); }
+  resetScene() {
+    this.loadScene(this.sceneId);
+  }
 
-  setAimToward(point) {
-    const cue = this.world.cueBall;
-    if (!cue || this.world.isMoving) return;
-    this.aimAngle = Math.atan2(point.z - cue.position.z, point.x - cue.position.x);
+  adjustAim(delta) {
+    if (this.world.isMoving || !Number.isFinite(delta)) return;
+    this.aimAngle = normalizeAngle(this.aimAngle + delta);
   }
 
   setPower(value) {
@@ -63,10 +73,15 @@ export class SnookerGame {
     this.ui.onSpin?.(this.topSpin, this.sideSpin);
   }
 
-  setPull(v) { this.pull = Math.max(0, Math.min(1, v)); }
+  setPull(v) {
+    this.pull = Math.max(0, Math.min(1, v));
+  }
 
   shoot() {
     if (this.world.isMoving) return false;
+    const cue = this.world.cueBall;
+    if (!cue) return false;
+
     const direction = { x: Math.cos(this.aimAngle), z: Math.sin(this.aimAngle) };
     const speed = 0.55 + (this.power / 100) ** 1.45 * 5.4;
     const ok = this.world.shootCue({
@@ -75,23 +90,53 @@ export class SnookerGame {
       topSpin: this.topSpin,
       sideSpin: this.sideSpin,
     });
-    if (ok) this.pull = 0;
+
+    if (ok) {
+      this.pull = 0;
+      this.cameraMode = 'shot';
+      this.renderer.beginShotView(cue, this.aimAngle);
+      this.ui.onCamera?.('shot');
+    }
     return ok;
   }
 
-  setCamera(mode) { this.renderer.setCameraMode(mode); }
+  setCamera(mode) {
+    if (!['aim', 'tactical', 'top'].includes(mode)) return false;
+    if (this.world.isMoving && mode === 'aim') return false;
+    this.cameraMode = mode;
+    this.renderer.setCameraMode(mode);
+    this.ui.onCamera?.(mode);
+    return true;
+  }
+
+  setMomentaryTop(active) {
+    this.renderer.setMomentaryTop(active);
+  }
+
+  setStableCamera(value) {
+    this.renderer.setStableCamera(value);
+  }
 
   tick(now) {
     const rawDt = Math.min(0.05, Math.max(0, (now - this.lastTime) / 1000));
     this.lastTime = now;
     this.accumulator += rawDt;
+
     while (this.accumulator >= FIXED_DT) {
       this.world.step(FIXED_DT);
       this.accumulator -= FIXED_DT;
     }
 
+    const moving = this.world.isMoving;
+    if (this.wasMoving && !moving && this.cameraMode === 'shot') {
+      this.renderer.endShotView();
+      this.cameraMode = 'tactical';
+      this.ui.onCamera?.('tactical');
+    }
+    this.wasMoving = moving;
+
     this.renderer.syncBalls(this.world.balls);
-    this.renderer.setAim(this.world.cueBall, this.aimAngle, this.pull, !this.world.isMoving);
+    this.renderer.setAim(this.world.cueBall, this.aimAngle, this.pull, !moving);
     this.renderer.render(rawDt);
     this.#updateUi(rawDt);
   }
@@ -103,10 +148,13 @@ export class SnookerGame {
       motion: this.world.getCueMotionState(),
       moving: this.world.isMoving,
     });
-    this.frames++;
+
+    this.frames += 1;
     this.fpsClock += dt;
     if (this.fpsClock >= 0.5) {
-      this.ui.onFps?.(Math.round(this.frames / this.fpsClock));
+      const fps = Math.round(this.frames / this.fpsClock);
+      this.renderer.reportFrameRate(fps);
+      this.ui.onFps?.(fps);
       this.frames = 0;
       this.fpsClock = 0;
     }
