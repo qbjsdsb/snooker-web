@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#101512" />
+  <title>Snooker Physics Lab</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">PHASE 0 · PHYSICS & FEEL LAB</div>
+        <h1>Snooker Lab</h1>
+      </div>
+      <div class="status-group">
+        <span id="physicsStatus" class="status-pill">静止</span>
+        <span id="fpsLabel" class="muted">— fps</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="stage-panel">
+        <div id="stage" class="stage" aria-label="斯诺克物理测试球台"></div>
+        <div id="hint" class="stage-hint">移动鼠标瞄准 · 按住球台向后拖动蓄力 · 松开击球</div>
+      </section>
+
+      <aside class="control-panel">
+        <section class="control-section">
+          <div class="section-heading">
+            <span>测试场景</span>
+            <button id="resetScene" class="text-button" type="button">重置</button>
+          </div>
+          <div id="sceneButtons" class="scene-grid"></div>
+        </section>
+
+        <section class="control-section">
+          <div class="section-heading"><span>击球</span><span id="powerText" class="value-label">42%</span></div>
+          <label class="field-label" for="powerRange">力量</label>
+          <input id="powerRange" type="range" min="5" max="100" value="42" />
+          <button id="shootButton" class="primary-button" type="button">击球</button>
+        </section>
+
+        <section class="control-section spin-section">
+          <div class="section-heading"><span>击球点</span><button id="resetSpin" class="text-button" type="button">居中</button></div>
+          <div class="spin-row">
+            <div id="spinPad" class="spin-pad" role="application" aria-label="白球击球点选择">
+              <div class="spin-cross spin-cross-x"></div>
+              <div class="spin-cross spin-cross-y"></div>
+              <div id="spinDot" class="spin-dot"></div>
+            </div>
+            <div class="spin-readout">
+              <div><span>上下杆</span><strong id="topSpinText">0.00</strong></div>
+              <div><span>左右塞</span><strong id="sideSpinText">0.00</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="control-section">
+          <div class="section-heading"><span>镜头</span></div>
+          <div class="segmented" id="cameraButtons">
+            <button type="button" data-camera="aim" class="active">瞄准</button>
+            <button type="button" data-camera="tactical">战术</button>
+            <button type="button" data-camera="top">俯视</button>
+          </div>
+        </section>
+
+        <section class="control-section metrics">
+          <div class="section-heading"><span>实时数据</span></div>
+          <dl>
+            <div><dt>白球速度</dt><dd id="speedMetric">0.00 m/s</dd></div>
+            <div><dt>运动状态</dt><dd id="motionMetric">stationary</dd></div>
+            <div><dt>固定步长</dt><dd>1 / 240 s</dd></div>
+          </dl>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="footer-note">
+      当前是物理手感实验室：先把瞄准、击球、旋转、碰撞、库边和袋口做扎实，再进入完整斯诺克规则。
+    </footer>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
