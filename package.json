@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node serve.mjs",
     "dev": "node serve.mjs",
-    "test": "node tests/physics-smoke.mjs && node tests/input-camera-smoke.mjs"
+    "check": "node --check src/rendering/CameraRig.js && node --check src/rendering/SceneRenderer.js && node --check src/input/InputController.js && node --check src/game/SnookerGame.js && node --check src/main.js",
+    "test": "npm run check && node tests/physics-smoke.mjs && node tests/input-camera-smoke.mjs"
   }
 }
